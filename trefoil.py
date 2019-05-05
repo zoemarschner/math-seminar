@@ -1,44 +1,9 @@
 import math
-
-class Edge:
-    def __init__(self, vertices, origin, dest):
-        self.vertices = vertices
-        self.origin = origin
-        self.dest = dest
-
-    def __str__(self):
-        return f"{self.origin} -> {self.dest} ({id(self)})"
-
-    def endpoints(self):
-        return (self.origin, self.dest)
-
-class Crossing:
-     def __init__(self, coord, strands):
-         self.coord = coord
-         self.strands = strands
-
-class Point:
-    def __init__(self, x, z):
-        self.x = x
-        self.z = z
-
-    def __str__(self):
-        return f"{self.x}, {self.z}"
-
-class Strands:
-    def __init__(self, oo, ou, io, iu):
-         self.oo = oo
-         self.ou = ou
-         self.io = io
-         self.iu = iu
-
-class Knot:
-    def __init__(self, crossings):
-        self.crossings = crossings
+from knot import *
 
 n_edges = 100
 r = 1
-crossing_coords = (Point(0,0), Point(2,0), Point(1, math.sqrt(3)))
+crossing_coords = (Point(0,0,0), Point(2,0,0), Point(1, 0, math.sqrt(3)))
 
 #horrible code to make trefoil
 bottom_circle = ((1, 0, 0), math.pi, math.pi*2, crossing_coords[0],  crossing_coords[1])
@@ -222,11 +187,12 @@ for triangleList in triangleLists:
     for tri in triangleList:
         if i % 2 == 0 :
             triString = f"f {tri[0] + addendums[0]} {tri[1] + addendums[0]} {tri[2] + addendums[0]}\n"
+            backTriString = f"f {tri[2] + addendums[0]} {tri[1] + addendums[0]} {tri[0] + addendums[0]}\n" #comment out to remove back tri
         else:
             triString = f"f {tri[2] + addendums[0]} {tri[1] + addendums[0]} {tri[0] + addendums[0]}\n"
+            backTriString = f"f {tri[0] + addendums[0]} {tri[1] + addendums[0]} {tri[2] + addendums[0]}\n" #comment out to remove back tri
         output_file.write(triString)
-        # backTriString = f"f {tri[2] + addendums[0]} {tri[1] + addendums[0]} {tri[0] + addendums[0]}\n"
-        # output_file.write(backTriString)
+        output_file.write(backTriString) #comment out to remove back tri
     i += 1
     addendums.pop(0)
 
@@ -262,8 +228,8 @@ for stripTriangleList in stripTriangleLists:
     for tri in stripTriangleList:
         triString = f"f {tri[0] + stripAddendums[0]} {tri[1] + stripAddendums[0]} {tri[2] + stripAddendums[0]}\n"
         output_file.write(triString)
-        # backTriString = f"f {tri[2] + stripAddendums[0]} {tri[1] + stripAddendums[0]} {tri[0] + stripAddendums[0]}\n"
-        # output_file.write(backTriString)
+        backTriString = f"f {tri[2] + stripAddendums[0]} {tri[1] + stripAddendums[0]} {tri[0] + stripAddendums[0]}\n" #comment out to remove back tri
+        output_file.write(backTriString) #comment out to remove back tri
     stripAddendums.pop(0)
 
 output_file.close()
