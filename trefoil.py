@@ -45,6 +45,8 @@ top_crossing = Crossing(crossing_coords[2], Strands(left_side, circles[2], circl
 
 trefoil = Knot([left_crossing, right_crossing, top_crossing])
 
+print(trefoil)
+
 #making seifert circles
 
 seifert_circles = []

@@ -7,6 +7,14 @@ class Knot:
     def __init__(self, crossings):
         self.crossings = crossings
 
+    def __str__(self):
+        string = f""
+        for crossing in self.crossings:
+            string += f"{crossing}\n"
+        if len(string) > 2:
+            string = string[:-2]
+        return string
+
 class Crossing:
     """Crossing is a point with four edges leaving
        coord is a Point object representing coordinates of crossing
@@ -15,6 +23,9 @@ class Crossing:
     def __init__(self, coord, strands):
          self.coord = coord
          self.strands = strands
+
+    def __str__(self):
+        return f"crossing at {self.coord}, with strands: {self.strands})"
 
 class Edge:
     """an edge is a list of verticies, going from one point to another
@@ -61,3 +72,6 @@ class Strands:
          self.ou = ou
          self.io = io
          self.iu = iu
+
+    def __str__(self):
+        return f"\n\tout & over: {self.oo}\n\tout & under: {self.ou}\n\tin & over: {self.io}\n\tin & under: {self.iu}"
