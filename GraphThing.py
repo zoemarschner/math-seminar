@@ -1,6 +1,7 @@
 import json
 import sys
 import tkinter as tk
+from knot import *
 
 #set to false if >2 intersection per point is okay 
 onlyTwoLoops = True
@@ -22,7 +23,7 @@ def line():
 #generate python
 def placePoint(event):
 	x, y = event.x, event.y
-	global isClosed
+	global isClosed, isValid
 	
 	#get nearest point in range
 	nearestPoint = pointNearPoint(x, y)
@@ -31,7 +32,7 @@ def placePoint(event):
 	if nearestPoint == None:
 		#if no nearest point add a new point
 		canvas.create_oval(x - (pointSize / 2), y - (pointSize / 2), x + (pointSize / 2), y + (pointSize / 2), outline = black, fill = white, width = 2)
-		points['p' + str(pointNum)] = {'x':x, 'y':y, 'used':0, 'index':pointNum}
+		points['p' + str(pointNum)] = {'x':x, 'y':y, 'used':0, 'index':pointNum, 'otherpoint': None}
 		isClosed = False
 	else:
 		#check if more than 1 interesection at point
@@ -39,8 +40,9 @@ def placePoint(event):
 			if (points[nearestPoint]['used'] == 1) and (points[nearestPoint]['index'] != 0):
 				isValid = False
 		#check if valid loop
-		if (pointNum - points[nearestPoint]['index']) == 2:
-				isValid = False
+		if (pointNum - points[nearestPoint]['index']) <= 2:
+			isValid = False
+			print(isValid)
 				
 		x = points[nearestPoint]['x']
 		y = points[nearestPoint]['y']
@@ -73,13 +75,74 @@ def pointNearPoint(x, y):
 
 #check if valid and output as Json
 def output():
-	print()
+	print(isValid)
 	if isValid and isClosed:
 		print('points:')
 		print(json.dumps(points))
+		knotObj = genKnot()
+		print(knotObj)
+		return knotObj
 	else:
 		print("invalid graph")
+		return None
 
+#generates a knot object using points
+def genKnot():
+	crossingPoints = []
+	edges = []
+	strands = []
+	crossings = []
+	
+	#get crossingPoints
+	for p in points:
+		if points[p]["otherpoint"] != None and not points[p]["otherpoint"] in crossingPoints:
+			crossingPoints.append(points[p]["index"])
+
+	#get edges
+	for p in crossingPoints:
+		startPoint = points["p" + str(p)]
+		if p + 1 <= len(crossingPoints):
+			endPoint = points["p" + str(p + 1)]
+		else:
+			endPoint = points["p0"]
+		tuples = []
+		for i in range(startPoint["index"], endPoint["index"] + 1):
+			tuples.append([points["p" + str(i)]["x"], points["p" + str(i)]["y"], 0])
+		edges.append(Edge(tuples, Point(startPoint["x"], startPoint["y"], 0), Point(endPoint["x"], endPoint["y"], 0)))
+
+	
+
+	#get strands
+	for p in crossingPoints:
+		oo = None
+		ou = None
+		io = None
+		iu = None
+		for e in edges:
+			underIn, underOut = True, True
+			if underIn:
+				if e.origin.x == points["p" + str(p)]["x"] and e.origin.y == points["p" + str(p)]["y"]:
+					iu = e
+					underIn = False
+			else:
+				if e.origin.x == points["p" + str(p)]["x"] and e.origin.y == points["p" + str(p)]["y"]:
+					io = e
+			if underOut:
+				if e.dest.x == points["p" + str(p)]["x"] and e.dest.y == points["p" + str(p)]["y"]:
+					ou = e
+					underIn = False
+			else:
+				if e.dest.x == points["p" + str(p)]["x"] and e.dest.y == points["p" + str(p)]["y"]:
+					oo = e
+		strands.append(Strands(oo, ou, io, iu))
+	
+	#build crossings
+	for i in range(len(crossingPoints)):
+		crossings.append(Crossing(Point(points["p" + str(crossingPoints[i])]["x"], points["p" + str(crossingPoints[i])]["y"], 0), strands[i]))
+	
+	return Knot(crossings)
+
+		
 #reset variables and clear canvas
 def restart():
 	global points, pointNum, isValid, isClosed
