@@ -156,57 +156,52 @@ def redrawknot():
 
 #generates a knot object using points
 def genKnot():
-	crossingPoints = []
+	crossingPoints = {}
 	edges = []
 	strands = []
 	crossings = []
 	
 	#get crossingPoints
 	for p in points:
-		if points[p]["otherpoint"] != None and not points[p]["otherpoint"] in crossingPoints:
-			crossingPoints.append(points[p]["index"])
+		if points[p]["otherpoint"] != None and points[p]["otherpoint"] > points[p]["index"]:
+			crossingPoints[p]={"first": points[p]["index"], "second": points[p]["otherpoint"], "oo": None, "ou": None, "io": None, "iu":None }
 
-	#get edges
-	for p in crossingPoints:
-		startPoint = points["p" + str(p)]
-		if p + 1 <= len(crossingPoints):
-			endPoint = points["p" + str(p + 1)]
-		else:
-			endPoint = points["p0"]
-		tuples = []
-		for i in range(startPoint["index"], endPoint["index"] + 1):
-			tuples.append([points["p" + str(i)]["x"], points["p" + str(i)]["y"], 0])
-		edges.append(Edge(tuples, Point(startPoint["x"], startPoint["y"], 0), Point(endPoint["x"], endPoint["y"], 0)))
-
-	
-
-	#get strands
-	for p in crossingPoints:
-		oo = None
-		ou = None
-		io = None
-		iu = None
-		for e in edges:
-			underIn, underOut = True, True
-			if underIn:
-				if e.origin.x == points["p" + str(p)]["x"] and e.origin.y == points["p" + str(p)]["y"]:
-					iu = e
-					underIn = False
+	tuples = []
+	startPoint = points["p0"]
+	crossPoint = "p0"
+	crossType="o"
+	tuples.append([startPoint["x"],startPoint["y"],0])
+	index=1
+	while index <= pointNum -1:
+		name = "p" + str(index)
+		tuples.append([points[name]["x"], points[name]["y"], 0])
+		if points[name]["otherpoint"] != None:
+			if points[name]["otherpoint"] > index:
+				newcrossPoint = "p" + str(index)
+				newcrossType="o"
 			else:
-				if e.origin.x == points["p" + str(p)]["x"] and e.origin.y == points["p" + str(p)]["y"]:
-					io = e
-			if underOut:
-				if e.dest.x == points["p" + str(p)]["x"] and e.dest.y == points["p" + str(p)]["y"]:
-					ou = e
-					underIn = False
-			else:
-				if e.dest.x == points["p" + str(p)]["x"] and e.dest.y == points["p" + str(p)]["y"]:
-					oo = e
-		strands.append(Strands(oo, ou, io, iu))
-	
-	#build crossings
-	for i in range(len(crossingPoints)):
-		crossings.append(Crossing(Point(points["p" + str(crossingPoints[i])]["x"], points["p" + str(crossingPoints[i])]["y"], 0), strands[i]))
+				newcrossPoint = "p" + str(points[name]["otherpoint"])
+				newcrossType="u"
+			endPoint = points[name]
+			e = Edge(tuples, Point(startPoint["x"], startPoint["y"], 0), Point(endPoint["x"], endPoint["y"], 0))
+			# print(tuples)
+			edges.append(e)
+			crossingPoints[crossPoint]["o" + crossType] = e
+			crossingPoints[newcrossPoint]["i" + newcrossType] = e			
+			startPoint = endPoint
+			crossPoint = newcrossPoint
+			crossType = newcrossType
+			tuples = []
+			tuples.append([startPoint["x"],startPoint["y"],0])
+
+		index = index+1
+		
+	for p in crossingPoints:
+		s = Strands(crossingPoints[p]["oo"], crossingPoints[p]["ou"], crossingPoints[p]["io"], crossingPoints[p]["iu"])
+		strands.append(s)
+		name = "p" + str(crossingPoints[p]["first"])
+		c = Crossing(Point(points[name]["x"], points[name]["y"], 0), s)
+		crossings.append(c)
 	
 	return Knot(crossings)
 
