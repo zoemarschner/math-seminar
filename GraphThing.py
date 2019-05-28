@@ -81,10 +81,78 @@ def output():
 		print(json.dumps(points))
 		knotObj = genKnot()
 		print(knotObj)
+		redrawknot()
 		return knotObj
 	else:
 		print("invalid graph")
 		return None
+
+# redraws points with crossings
+# connects points with bezier curves
+def redrawknot():
+	crossingPoints = []
+	canvas.delete('all')
+	
+	# finds points to redraw
+	for p in points:
+		if points[p]["otherpoint"] != None and not points[p]["otherpoint"] in crossingPoints:
+			# draw crossing
+			x = points[p]['x']
+			y = points[p]['y']
+			canvas.create_oval(x - (pointSize / 2), y - (pointSize / 2), x + (pointSize / 2), y + (pointSize / 2), outline = black, fill = white, width = 1)
+
+	# finds slope for each point
+	for x in range (0, pointNum-1,1):
+		if x+1 < pointNum-1:
+			nx = x+1
+		else:
+			nx = 1
+		if x-1 >= 0:
+			px = x-1
+		else:
+			px = pointNum-1
+		p = points["p"+str(x)]
+		np = points["p"+str(nx)]
+		pp = points["p"+str(px)]
+		p["dx"] = np["x"] - pp["x"]  
+		p["dy"] = np["y"] - pp["y"]
+	
+	# makes a bezier curve
+	for x in range (0, pointNum-1,1):
+		if x+1 < pointNum-1:
+			nx = x+1
+		else:
+			nx = 0
+		p = points["p"+str(x)]
+		np = points["p"+str(nx)]
+		d = 4
+		x0 = p["x"]
+		y0 = p["y"]
+		x1 = p["x"] + p["dx"]/d
+		y1 = p["y"] + p["dy"]/d
+		x2 = np["x"] - np["dx"]/d
+		y2 = np["y"] - np["dy"]/d
+		x3 = np["x"]
+		y3 = np["y"]
+		# canvas.create_oval(x0 - (pointSize / 5), y0 - (pointSize / 5), x0 + (pointSize / 5), y0 + (pointSize / 5), outline = red, fill = white, width = 2)
+		# canvas.create_oval(x1 - (pointSize / 5), y1 - (pointSize / 5), x1 + (pointSize / 5), y1 + (pointSize / 5), outline = red, fill = white, width = 2)
+		# canvas.create_oval(x2 - (pointSize / 5), y2 - (pointSize / 5), x2 + (pointSize / 5), y2 + (pointSize / 5), outline = red, fill = white, width = 2)
+		# canvas.create_oval(x3 - (pointSize / 5), y3 - (pointSize / 5), x3 + (pointSize / 5), y3 + (pointSize / 5), outline = red, fill = white, width = 2)
+		
+		xx = x0
+		yy = y0
+		
+		res=100
+		
+		# formula for bezier curve
+		# https://en.wikipedia.org/wiki/B%C3%A9zier_curve#Specific_cases
+		for u  in range (1,res,1):
+			v = u/res
+			xxx = x0*(1-v)**3 + x1*3*v*(1-v)**2 + x2*3*v**2*(1-v)+x3*v**3
+			yyy = y0*(1-v)**3 + y1*3*v*(1-v)**2 + y2*3*v**2*(1-v)+y3*v**3
+			canvas.create_line(xx, yy, xxx, yyy, width = 3)
+			xx = xxx
+			yy = yyy
 
 #generates a knot object using points
 def genKnot():
