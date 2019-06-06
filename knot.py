@@ -15,6 +15,9 @@ class Knot:
             string = string[:-2]
         return string
 
+    def resolveOrientation(self):
+        map((lambda c: c.resolveOrientation()), self.crossings)
+
 class Crossing:
     """Crossing is a point with four edges leaving
        coord is a Point object representing coordinates of crossing
@@ -25,7 +28,18 @@ class Crossing:
          self.strands = strands
 
     def __str__(self):
-        return f"crossing at {self.coord}, with strands: {self.strands})"
+        return f"crossing at {self.coord}, with strands: {self.strands}"
+
+    """call this method to reorient the edges so that their lists follow the direction
+       of the orientation of the knot. Intended to be called on each crossing"""
+    def resolveOrientation(self):
+        for outStrand in self.strands.getOutStrands():
+            if outStrand.origin != self.coord:
+                outStrand.reverse()
+
+        for inStrand in self.strands.getInStrands():
+            if inStrand.origin != self.coord:
+                inStrand.reverse()
 
 class Edge:
     """an edge is a list of verticies, going from one point to another
@@ -47,6 +61,12 @@ class Edge:
     def endpoints(self):
         return (self.origin, self.dest)
 
+    """reverses the direction the edge is drawn in"""
+    def reverse(self):
+        self.vertices.reverse()
+        temp = self.origin
+        self.origin = self.dest
+        self.dest = temp
 
 class Point:
     """a Point is a specific point in the graph, with coordinates in 3space (x, y, z)
@@ -75,3 +95,12 @@ class Strands:
 
     def __str__(self):
         return f"\n\tout & over: {self.oo}\n\tout & under: {self.ou}\n\tin & over: {self.io}\n\tin & under: {self.iu}"
+
+    def getInStrands(self):
+        return [self.io, self.iu]
+
+    def getOutStrands(self):
+        return [self.oo, self.ou]
+
+    def strandsJoinedinAlgorithm(self):
+        return [[self.io, self.ou], [self.iu, self.oo]]
