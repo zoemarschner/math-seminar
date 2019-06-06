@@ -1,69 +1,36 @@
 import json
+import math
 import sys
 import tkinter as tk
 from knot import *
 
-#set to false if >2 intersection per point is okay 
-onlyTwoLoops = True
+
+
+# global varibales
 
 isValid = True
 isClosed = False
+isFirstPointCrossing = False
+isFinished = False
+
 pointSize = 25
 pointNum = 0
+crossingNum = 0
+lastCrossing = 0
 points = {}
+crossings = {}
+
+refinedPoints = {}
+refinedPointsNum = 0
+
+edges = []
+
 black, white, red = '#000000', '#FFFFFF', '#FF0000'
 
-#creates a line between last point and seconed to last point in points
-def line():
-	if pointNum >= 1:
-		x0, y0 = points['p' + str(pointNum - 1)]['x'], points['p' + str(pointNum - 1)]['y']
-		x1, y1 = points['p' + str(pointNum)]['x'], points['p' + str(pointNum)]['y']
-		canvas.create_line(x0, y0, x1, y1, width = 3)
 
-#generate python
-def placePoint(event):
-	x, y = event.x, event.y
-	global isClosed, isValid
+
 	
-	#get nearest point in range
-	nearestPoint = pointNearPoint(x, y)
-	
-	#checks if there is no nearest point
-	if nearestPoint == None:
-		#if no nearest point add a new point
-		canvas.create_oval(x - (pointSize / 2), y - (pointSize / 2), x + (pointSize / 2), y + (pointSize / 2), outline = black, fill = white, width = 2)
-		points['p' + str(pointNum)] = {'x':x, 'y':y, 'used':0, 'index':pointNum, 'otherpoint': None}
-		isClosed = False
-	else:
-		#check if more than 1 interesection at point
-		if onlyTwoLoops:		
-			if (points[nearestPoint]['used'] == 1) and (points[nearestPoint]['index'] != 0):
-				isValid = False
-		#check if valid loop
-		if (pointNum - points[nearestPoint]['index']) <= 2:
-			isValid = False
-			print(isValid)
-				
-		x = points[nearestPoint]['x']
-		y = points[nearestPoint]['y']
-		points['p' + str(pointNum)] = {'x':x, 'y':y, 'used':1, 'index':pointNum, 'otherpoint':points[nearestPoint]['index']}
-		points[nearestPoint]['used'] = 1
-		points[nearestPoint]['otherpoint'] = pointNum
-		#recolour point
-		canvas.create_oval(x - (pointSize / 2), y - (pointSize / 2), x + (pointSize / 2), y + (pointSize / 2), outline = red, fill = white, width = 2)
-		#check if loop is closed
-		if points[nearestPoint]['index'] == 0:
-			isClosed = True
-		else:
-			isClosed = False
-	
-	line()
-	incrementPointNum()
-	
-#increment global variable
-def incrementPointNum():
-	global pointNum
-	pointNum += 1
+
 
 #checks if a point is near another point
 def pointNearPoint(x, y):
@@ -73,121 +40,363 @@ def pointNearPoint(x, y):
 			return point
 	return None
 
-#check if valid and output as Json
-def output():
-	print(isValid)
-	if isValid and isClosed:
-		print('points:')
-		print(json.dumps(points))
-		knotObj = genKnot()
-		print(knotObj)
-		redrawknot()
-		return knotObj
-	else:
-		print("invalid graph")
-		return None
 
-# redraws points with crossings
-# connects points with bezier curves
-def redrawknot():
+#checks if a point is near crossing point
+def crossingNearPoint(x, y):
+	for point in crossings:
+		dist = (x - crossings[point]['x']) ** 2 + (y - crossings[point]['y']) ** 2
+		if dist < (pointSize) ** 2:
+			return point
+	return None
+
+
+
+# place a new point
+def addPoint(x,y):
+	global isClosed, isValid, isFirstPointCrossing
+	global pointNum, crossingNum
+
+	nearestPoint = pointNearPoint(x, y)
+	if nearestPoint == None:
+		#if no nearest point add a new point
+
+		# add point to the list
+		points['p' + str(pointNum)] = {'x':x, 'y':y, 'used':0, 'index':pointNum, 'otherpoint': None}
+		isClosed = False
+		
+		#draw circle
+		canvas.create_oval(x - (pointSize / 2), y - (pointSize / 2), x + (pointSize / 2), y + (pointSize / 2), outline = black, fill = white, width = 2)
+		
+		#draw line
+		if pointNum >= 1:
+			x0, y0 = points['p' + str(pointNum - 1)]['x'], points['p' + str(pointNum - 1)]['y']
+			canvas.create_line(x0, y0, x, y, width = 3)
+			
+		# increase num of points
+		# incrementPointNum()
+		pointNum += 1
+
+	else:
+		# this is a crossing
+		# get index of other point
+		np = points[nearestPoint]['index']
+		x = points[nearestPoint]['x']
+		y = points[nearestPoint]['y']
+		
+		if points[nearestPoint]['used'] == 0:
+			# add point to the list
+			points['p' + str(pointNum)] = {'x':x, 'y':y, 'used':1, 'index':pointNum, 'otherpoint': np, 'crossing': crossingNum}
+			
+			# draw line
+			x0, y0 = points['p' + str(pointNum - 1)]['x'], points['p' + str(pointNum - 1)]['y']
+			canvas.create_line(x0, y0, x, y, width = 3)
+			
+			if np+2 == pointNum:
+				isValid= False
+				#recolour point
+				canvas.create_oval(x - (pointSize / 2), y - (pointSize / 2), x + (pointSize / 2), y + (pointSize / 2), outline = red, fill = red, width = 2)
+			else:
+				#recolour point
+				canvas.create_oval(x - (pointSize / 2), y - (pointSize / 2), x + (pointSize / 2), y + (pointSize / 2), outline = red, fill = white, width = 2)
+			
+			# modify nearestpoint
+			points[nearestPoint]['used'] = 1
+			points[nearestPoint]['otherpoint'] = pointNum
+			points[nearestPoint]['crossing'] = crossingNum
+			
+			# add crossing
+			crossings['c' + str(crossingNum)] = {'x':x, 'y':y, 'index':crossingNum, 'firstPoint':np, 'secondPoint': pointNum,"oo": None, "ou": None, "io": None, "iu":None}
+			#incrementCrossingNum()			
+			crossingNum += 1			
+			
+			if np == 0:
+				isClosed = True
+			else:
+				isClosed = False
+			#	setLastCorssing()
+				
+			# increase num of points
+			#incrementPointNum()
+			pointNum += 1
+
+		
+		else:
+			if np != 0:
+				#invalid loop
+				isValid = False
+				
+				# add point to the list
+				points['p' + str(pointNum)] = {'x':x, 'y':y, 'used':1, 'index':pointNum, 'otherpoint': np, 'crossing': crossingNum}
+			
+				# draw line
+				x0, y0 = points['p' + str(pointNum - 1)]['x'], points['p' + str(pointNum - 1)]['y']
+				canvas.create_line(x0, y0, x, y, width = 3)
+				
+				#draw circle
+				canvas.create_oval(x - (pointSize / 2), y - (pointSize / 2), x + (pointSize / 2), y + (pointSize / 2), outline = black, fill = red, width = 2)
+				
+				# increase num of points
+				# incrementPointNum()
+				pointNum += 1
+			else:
+				# closing the loop at the initial point which is also crossing
+
+				# add point to the list
+				points['p' + str(pointNum)] = {'x':x, 'y':y, 'used':2, 'index':pointNum, 'otherpoint': np, 'crossing': points['p0']['crossing']}
+
+				# draw line
+				x0, y0 = points['p' + str(pointNum - 1)]['x'], points['p' + str(pointNum - 1)]['y']
+				canvas.create_line(x0, y0, x, y, width = 3)
+
+				isClosed = True
+				isFirstPointCrossing = True
+				# increase num of points
+				# incrementPointNum()
+				pointNum += 1
+				
+				# finish drawing....
+				finishDraw()
+
+
+
+
+
+
+# redraw the knot
+def redrawKnot():
+	# erase everything
 	crossingPoints = []
 	canvas.delete('all')
 	
-	# finds points to redraw
-	for p in points:
-		if points[p]["otherpoint"] != None and not points[p]["otherpoint"] in crossingPoints:
-			# draw crossing
-			x = points[p]['x']
-			y = points[p]['y']
-			canvas.create_oval(x - (pointSize / 2), y - (pointSize / 2), x + (pointSize / 2), y + (pointSize / 2), outline = black, fill = white, width = 1)
+	# draw crossings
+	for c in crossings:
+		# draw crossing
+		x = crossings[c]['x']
+		y = crossings[c]['y']
+		canvas.create_oval(x - (pointSize / 2), y - (pointSize / 2), x + (pointSize / 2), y + (pointSize / 2), outline = black, fill = white, width = 1)
 
-	# finds slope for each point
-	for x in range (0, pointNum-1,1):
-		if x+1 < pointNum-1:
-			nx = x+1
+	# draw points on the edges
+	for c in refinedPoints:
+		x = refinedPoints[c]['x']
+		y = refinedPoints[c]['y']
+		canvas.create_oval(x - 3, y - 3, x + 3, y + 3, outline = black, fill = black, width = 0.2)
+	
+	# draws  bezier curves
+	for x in range (0, refinedPointsNum-1,1):
+		p = refinedPoints["rp"+str(x)]
+		np = refinedPoints["rp"+str(p['np'])]
+		
+		# check if you need to remove parts of the curve
+		if p['used'] == 0:
+			a=0
 		else:
-			nx = 1
-		if x-1 >= 0:
-			px = x-1
+			if crossings['c'+str(p['crossing'])]['firstPoint'] == p['old']:
+				a=0
+			else:
+				a=0.25
+				
+		if np['used'] == 0:
+			b=1
 		else:
-			px = pointNum-1
+			if crossings['c'+str(np['crossing'])]['firstPoint'] == np['old']:
+				b=1
+			else:
+				b=0.75
+		
+		drawBezierCurve(p['x0'],p['y0'],p['x1'],p['y1'],p['x2'],p['y2'],p['x3'],p['y3'],a,b)
+
+
+
+# finds slope for each point and computes the lenghts of Bezier curves
+def computeTangentsAndLenghts():
+	# find the previous and next point
+	for x in range (0, pointNum,1):
 		p = points["p"+str(x)]
-		np = points["p"+str(nx)]
-		pp = points["p"+str(px)]
+#		print(p)
+		if x+2 < pointNum:
+			p['np'] = x+1
+		else:
+			p['np'] = 0
+		if x-1 >= 0:
+			p['pp'] = x-1
+		else:
+			p['pp'] = pointNum-2
+		np = points["p"+str(p['np'])]
+		pp = points["p"+str(p['pp'])]
+		# computes the difference
 		p["dx"] = np["x"] - pp["x"]  
 		p["dy"] = np["y"] - pp["y"]
+#		print(p)
 	
-	# makes a bezier curve
+	# finds the controll points for the Bezier curves
 	for x in range (0, pointNum-1,1):
-		if x+1 < pointNum-1:
-			nx = x+1
-		else:
-			nx = 0
 		p = points["p"+str(x)]
-		np = points["p"+str(nx)]
+		np = points["p"+str(p['np'])]
+		# this controls the smoothness... 
 		d = 4
-		x0 = p["x"]
-		y0 = p["y"]
-		x1 = p["x"] + p["dx"]/d
-		y1 = p["y"] + p["dy"]/d
-		x2 = np["x"] - np["dx"]/d
-		y2 = np["y"] - np["dy"]/d
-		x3 = np["x"]
-		y3 = np["y"]
-		# canvas.create_oval(x0 - (pointSize / 5), y0 - (pointSize / 5), x0 + (pointSize / 5), y0 + (pointSize / 5), outline = red, fill = white, width = 2)
-		# canvas.create_oval(x1 - (pointSize / 5), y1 - (pointSize / 5), x1 + (pointSize / 5), y1 + (pointSize / 5), outline = red, fill = white, width = 2)
-		# canvas.create_oval(x2 - (pointSize / 5), y2 - (pointSize / 5), x2 + (pointSize / 5), y2 + (pointSize / 5), outline = red, fill = white, width = 2)
-		# canvas.create_oval(x3 - (pointSize / 5), y3 - (pointSize / 5), x3 + (pointSize / 5), y3 + (pointSize / 5), outline = red, fill = white, width = 2)
+		# set up control points
+		p['x0'] = p["x"]
+		p['y0'] = p["y"]
+		p['x1'] = p["x"] + p["dx"]/d
+		p['y1'] = p["y"] + p["dy"]/d
+		p['x2'] = np["x"] - np["dx"]/d
+		p['y2'] = np["y"] - np["dy"]/d
+		p['x3'] = np["x"]
+		p['y3'] = np["y"]
 		
-		xx = x0
-		yy = y0
-		
-		res=100
-		
-		# formula for bezier curve
-		# https://en.wikipedia.org/wiki/B%C3%A9zier_curve#Specific_cases
-		for u  in range (1,res,1):
-			v = u/res
-			xxx = x0*(1-v)**3 + x1*3*v*(1-v)**2 + x2*3*v**2*(1-v)+x3*v**3
-			yyy = y0*(1-v)**3 + y1*3*v*(1-v)**2 + y2*3*v**2*(1-v)+y3*v**3
-			canvas.create_line(xx, yy, xxx, yyy, width = 3)
-			xx = xxx
-			yy = yyy
+		# get the lenght
+		p['len'] = lenghtsOfBezierCurve(p['x0'],p['y0'],p['x1'],p['y1'],p['x2'],p['y2'],p['x3'],p['y3'])
+#		print(p)
 
-#generates a knot object using points
-def genKnot():
-	crossingPoints = {}
-	edges = []
-	strands = []
-	crossings = []
+
+
+# compute point on Bezier curve
+def pointOnBezierCurve(x0,y0,x1,y1,x2,y2,x3,y3,v):
+	x = x0*(1-v)**3 + x1*3*v*(1-v)**2 + x2*3*v**2*(1-v)+x3*v**3
+	y = y0*(1-v)**3 + y1*3*v*(1-v)**2 + y2*3*v**2*(1-v)+y3*v**3
+	return x,y 
+
+# computes lenght of Bezeier curve
+def lenghtsOfBezierCurve(x0,y0,x1,y1,x2,y2,x3,y3):	
+	xx = x0
+	yy = y0
+	l = 0
+	# number of points to approiximate -- 500 is an over kill
+	res=500
+	for u  in range (1,res,1):
+		v = u/res
+		xxx,yyy = pointOnBezierCurve(x0,y0,x1,y1,x2,y2,x3,y3,v)
+		l += math.sqrt( (xx-xxx)**2 + (yy-yyy)**2 )
+		xx = xxx
+		yy = yyy
+	return l
+
+# draw part of Bezier Curve	
+def drawBezierCurve(x0,y0,x1,y1,x2,y2,x3,y3,a,b):
 	
-	#get crossingPoints
-	for p in points:
-		if points[p]["otherpoint"] != None and points[p]["otherpoint"] > points[p]["index"]:
-			crossingPoints[p]={"first": points[p]["index"], "second": points[p]["otherpoint"], "oo": None, "ou": None, "io": None, "iu":None }
+	xx,yy = pointOnBezierCurve(x0,y0,x1,y1,x2,y2,x3,y3,a)
+	#  number of segments -- we already added extra points so there is no need of large numbers
+	res=20		
+	for u  in range (int(a*res+1),int(b*res),1):
+		v = u/res
+		xxx,yyy = pointOnBezierCurve(x0,y0,x1,y1,x2,y2,x3,y3,v)
+		canvas.create_line(xx, yy, xxx, yyy, width = 3, capstyle = 'round')
+		xx = xxx
+		yy = yyy
 
+
+# add extra points
+def refinePoints():
+	global refinedPointsNum
+	# the average distance between points
+	step = 40;
+	if isFirstPointCrossing:
+		i=0
+	else:
+		i=crossings['c0']['firstPoint']
+
+	refinedPointsNum = 0
+
+	while i < pointNum-1:
+		p = points['p'+str(i)]
+		refinedPoints['rp'+str(refinedPointsNum)] = {'x':p['x'], 'y':p['y'], 'used':p['used'], 'old':i}
+		if p['used']!=0:
+			refinedPoints['rp'+str(refinedPointsNum)]['crossing']= p['crossing']
+		refinedPointsNum += 1
+		morePoints = int(p['len'] / step)
+		# adds extra points if necessary
+		for j in range(1,morePoints,1):
+			x,y = pointOnBezierCurve(p['x0'],p['y0'],p['x1'],p['y1'],p['x2'],p['y2'],p['x3'],p['y3'], j/morePoints) 
+			refinedPoints['rp'+str(refinedPointsNum)] = {'x':x, 'y':y, 'used':0,'old':-1}
+			refinedPointsNum += 1
+		i +=1
+	if 	isFirstPointCrossing:
+		p = points['p0']
+		refinedPoints['rp'+str(refinedPointsNum)] = {'x':p['x'], 'y':p['y'], 'used':p['used'], 'old':0, 'crossing': p['crossing']}
+		refinedPointsNum += 1
+	else:
+		i=0
+		while i < crossings['c0']['firstPoint']:
+			p = points['p'+str(i)]
+			refinedPoints['rp'+str(refinedPointsNum)] = {'x':p['x'], 'y':p['y'], 'used':p['used'],'old':i}
+			if p['used']!=0:
+				refinedPoints['rp'+str(refinedPointsNum)]['crossing']= p['crossing']
+			refinedPointsNum += 1
+			morePoints = int(p['len'] / step)
+			# adds extra points if necessary
+			for j in range(1,morePoints,1):
+				x,y = pointOnBezierCurve(p['x0'],p['y0'],p['x1'],p['y1'],p['x2'],p['y2'],p['x3'],p['y3'], j/morePoints) 
+				refinedPoints['rp'+str(refinedPointsNum)] = {'x':x, 'y':y, 'used':0,'old':-1}
+				refinedPointsNum += 1
+			i += 1
+		p = points['p'+str(i)]
+		refinedPoints['rp'+str(refinedPointsNum)] = {'x':p['x'], 'y':p['y'], 'used':p['used'],'old':i, 'crossing': p['crossing']}
+		refinedPointsNum += 1
+
+#	for r in refinedPoints:
+#		print(r,refinedPoints[r])
+		
+	# recomputes the adjecent points and slopes
+	for x in range (0, refinedPointsNum-1,1):
+		p = refinedPoints['rp'+str(x)]
+		if x+2 < refinedPointsNum:
+			p['np'] = x+1
+		else:
+			p['np'] = 0
+		if x-1 >= 0:
+			p['pp'] = x-1
+		else:
+			p['pp'] = refinedPointsNum-2
+		np = refinedPoints['rp'+str(p['np'])]
+		pp = refinedPoints['rp'+str(p['pp'])]
+		p["dx"] = np["x"] - pp["x"]  
+		p["dy"] = np["y"] - pp["y"]
+#		print(p)
+
+	# recomputes the control points	
+	for x in range (0, refinedPointsNum-1,1):
+		p = refinedPoints["rp"+str(x)]
+		np = refinedPoints["rp"+str(p['np'])]
+		d = 4
+		# set up control points
+		p['x0'] = p["x"]
+		p['y0'] = p["y"]
+		p['x1'] = p["x"] + p["dx"]/d
+		p['y1'] = p["y"] + p["dy"]/d
+		p['x2'] = np["x"] - np["dx"]/d
+		p['y2'] = np["y"] - np["dy"]/d
+		p['x3'] = np["x"]
+		p['y3'] = np["y"]
+
+
+# construct the edges and attach them to the crossings
+def getEdges():
 	tuples = []
-	startPoint = points["p0"]
-	crossPoint = "p0"
-	crossType="o"
+	startPoint = refinedPoints["rp0"]
+	crossPoint = 'c'+str(startPoint["crossing"])
+	crossType="u"
 	tuples.append([startPoint["x"],startPoint["y"],0])
 	index=1
-	while index <= pointNum -1:
-		name = "p" + str(index)
-		tuples.append([points[name]["x"], points[name]["y"], 0])
-		if points[name]["otherpoint"] != None:
-			if points[name]["otherpoint"] > index:
-				newcrossPoint = "p" + str(index)
-				newcrossType="o"
-			else:
-				newcrossPoint = "p" + str(points[name]["otherpoint"])
+	while index <= refinedPointsNum -1:
+		name = "rp" + str(index)
+		p = refinedPoints[name]
+		tuples.append([p["x"], p["y"], 0])
+		if p["used"] == 1:
+			# we have finshed a whole edge...
+			newcrossPoint = 'c'+str(p["crossing"])
+			# gets the type of corssing
+			if crossings[newcrossPoint]['firstPoint'] == p['old']:
 				newcrossType="u"
-			endPoint = points[name]
+			else:
+				newcrossType="o"
+				
+			endPoint = refinedPoints[name]
 			e = Edge(tuples, Point(startPoint["x"], startPoint["y"], 0), Point(endPoint["x"], endPoint["y"], 0))
 			# print(tuples)
 			edges.append(e)
-			crossingPoints[crossPoint]["o" + crossType] = e
-			crossingPoints[newcrossPoint]["i" + newcrossType] = e			
+			# links the edge to the corssings
+			crossings[crossPoint]["o" + crossType] = e
+			crossings[newcrossPoint]["i" + newcrossType] = e			
 			startPoint = endPoint
 			crossPoint = newcrossPoint
 			crossType = newcrossType
@@ -195,36 +404,131 @@ def genKnot():
 			tuples.append([startPoint["x"],startPoint["y"],0])
 
 		index = index+1
-		
-	for p in crossingPoints:
-		s = Strands(crossingPoints[p]["oo"], crossingPoints[p]["ou"], crossingPoints[p]["io"], crossingPoints[p]["iu"])
-		strands.append(s)
-		name = "p" + str(crossingPoints[p]["first"])
-		c = Crossing(Point(points[name]["x"], points[name]["y"], 0), s)
-		crossings.append(c)
-	
-	return Knot(crossings)
 
+# event handler for drawing the knot
+def newPlacePoint(event):
+	addPoint(event.x, event.y)
+
+# event handler for flipping the corssings
+def flipCrossing(event):
+	#first find the corssing
+	cr = crossingNearPoint(event.x, event.y)
+	if cr != None:
+		# swap amlost everything attached to the corssing
+		c = crossings[cr]
+#		changeCrossing(cr)
+		f = c['firstPoint']
+		s = c['secondPoint']
+		c['firstPoint'] = s
+		c['secondPoint'] = f
+		f = c['oo']
+		s = c['ou']
+		c['oo'] = s
+		c['ou'] = f
+		f = c['io']
+		s = c['iu']
+		c['io'] = s
+		c['iu'] = f
 		
+		# redraw the knot
+		redrawKnot()
+
+# switch from drawing to flipping crossings also checks if the knot is valid
+def finishDraw():
+	global isFinished
+	if isValid and isClosed:
+		if not isFinished:
+			computeTangentsAndLenghts()
+			if isFirstPointCrossing == False:
+				# remove the first crossing
+				points['p0']['used']=0
+				points['p'+str(pointNum-1)]['used'] = 0
+				c = 'c'+str(points['p0']['crossing'])
+				del crossings[c]
+			
+			refinePoints()
+			getEdges()
+			redrawKnot()
+			canvas.bind('<ButtonPress-1>', flipCrossing)
+			isFinished = True
+	else:
+		print("invalid graph")
+		restart()
+
+# construct the knot object and print it
+def outputKnot():
+	strands = []
+	cross = []
+	
+	for c in crossings:
+		s = Strands(crossings[c]["oo"], crossings[c]["ou"], crossings[c]["io"], crossings[c]["iu"])
+		strands.append(s)
+#		print(s)
+		cr = Crossing(Point(crossings[c]["x"], crossings[c]["y"], 0), s)
+		cross.append(cr)
+#		print(cr)
+
+	
+	knotObj =  Knot(cross)
+	printEdges()
+	printKnot(knotObj)
+	return knotObj
+
+# prints knot
+def printKnot(knotObj):
+	print("--- Knot Begin  ---")
+	print(knotObj)
+	print("--- Knot End    ---")
+	
+# prints edges
+def printEdges():
+	i = 0
+	print("--- Edges Begin ---")
+	while i < len(edges):
+		print(id(edges[i]), edges[i].vertices)
+		i +=1
+	print("--- Edges End   ---")
+
 #reset variables and clear canvas
 def restart():
-	global points, pointNum, isValid, isClosed
+	global points, crossings, pointNum, crossingNum, edges, refinedPoints,refinedPointsNum 
+	global isValid, isClosed, isFirstPointCrossing, isFinished 
+
 	points = {}
+	crossings = {} 
 	pointNum = 0
+	crossingNum = 0 
+	refinedPoints = {}
+	refinedPointsNum = 0
+	edges=[]
 	isValid = True
 	isClosed = False
+	isFirstPointCrossing = False
+	isFinished = False
+	canvas.bind('<ButtonPress-1>', newPlacePoint)
 	canvas.delete('all')
-	
+	print("Restart")
+
+
+
+
+
+
+
 #create window
 root = tk.Tk()
 root.title("Knot Generator")
 
 #create output button and bind output() to it
-outputButton = tk.Button(text='output', command=output)
+finishButton = tk.Button(text='Finish Drawing', command=finishDraw)
+finishButton.pack(side=tk.TOP, anchor=tk.W)
+
+#create output button and bind output() to it
+outputButton = tk.Button(text='Output Knot', command=outputKnot)
 outputButton.pack(side=tk.TOP, anchor=tk.W)
 
 #create restart button and bind restart() to it
-restartButton = tk.Button(text='restart ', command=restart)
+restartButton = tk.Button(text='Restart', command=restart)
 restartButton.pack(side=tk.TOP, anchor=tk.W)
 
 #creates canvas to draw on
@@ -232,5 +536,7 @@ canvas = tk.Canvas(bg=white, width=800, height=800)
 canvas.pack()
 
 #Bind placepoint action to canvas
-canvas.bind('<ButtonPress-1>', placePoint)
+canvas.bind('<ButtonPress-1>', newPlacePoint)
 root.mainloop()
+
+
