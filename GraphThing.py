@@ -3,7 +3,7 @@ import math
 import sys
 import tkinter as tk
 from knot import *
-
+import SeifertMaker
 
 
 # global varibales
@@ -29,7 +29,7 @@ black, white, red = '#000000', '#FFFFFF', '#FF0000'
 
 
 
-	
+
 
 
 #checks if a point is near another point
@@ -63,15 +63,15 @@ def addPoint(x,y):
 		# add point to the list
 		points['p' + str(pointNum)] = {'x':x, 'y':y, 'used':0, 'index':pointNum, 'otherpoint': None}
 		isClosed = False
-		
+
 		#draw circle
 		canvas.create_oval(x - (pointSize / 2), y - (pointSize / 2), x + (pointSize / 2), y + (pointSize / 2), outline = black, fill = white, width = 2)
-		
+
 		#draw line
 		if pointNum >= 1:
 			x0, y0 = points['p' + str(pointNum - 1)]['x'], points['p' + str(pointNum - 1)]['y']
 			canvas.create_line(x0, y0, x, y, width = 3)
-			
+
 		# increase num of points
 		# incrementPointNum()
 		pointNum += 1
@@ -82,15 +82,15 @@ def addPoint(x,y):
 		np = points[nearestPoint]['index']
 		x = points[nearestPoint]['x']
 		y = points[nearestPoint]['y']
-		
+
 		if points[nearestPoint]['used'] == 0:
 			# add point to the list
 			points['p' + str(pointNum)] = {'x':x, 'y':y, 'used':1, 'index':pointNum, 'otherpoint': np, 'crossing': crossingNum}
-			
+
 			# draw line
 			x0, y0 = points['p' + str(pointNum - 1)]['x'], points['p' + str(pointNum - 1)]['y']
 			canvas.create_line(x0, y0, x, y, width = 3)
-			
+
 			if np+2 == pointNum:
 				isValid= False
 				#recolour point
@@ -98,43 +98,43 @@ def addPoint(x,y):
 			else:
 				#recolour point
 				canvas.create_oval(x - (pointSize / 2), y - (pointSize / 2), x + (pointSize / 2), y + (pointSize / 2), outline = red, fill = white, width = 2)
-			
+
 			# modify nearestpoint
 			points[nearestPoint]['used'] = 1
 			points[nearestPoint]['otherpoint'] = pointNum
 			points[nearestPoint]['crossing'] = crossingNum
-			
+
 			# add crossing
 			crossings['c' + str(crossingNum)] = {'x':x, 'y':y, 'index':crossingNum, 'firstPoint':np, 'secondPoint': pointNum,"oo": None, "ou": None, "io": None, "iu":None}
-			#incrementCrossingNum()			
-			crossingNum += 1			
-			
+			#incrementCrossingNum()
+			crossingNum += 1
+
 			if np == 0:
 				isClosed = True
 			else:
 				isClosed = False
 			#	setLastCorssing()
-				
+
 			# increase num of points
 			#incrementPointNum()
 			pointNum += 1
 
-		
+
 		else:
 			if np != 0:
 				#invalid loop
 				isValid = False
-				
+
 				# add point to the list
 				points['p' + str(pointNum)] = {'x':x, 'y':y, 'used':1, 'index':pointNum, 'otherpoint': np, 'crossing': crossingNum}
-			
+
 				# draw line
 				x0, y0 = points['p' + str(pointNum - 1)]['x'], points['p' + str(pointNum - 1)]['y']
 				canvas.create_line(x0, y0, x, y, width = 3)
-				
+
 				#draw circle
 				canvas.create_oval(x - (pointSize / 2), y - (pointSize / 2), x + (pointSize / 2), y + (pointSize / 2), outline = black, fill = red, width = 2)
-				
+
 				# increase num of points
 				# incrementPointNum()
 				pointNum += 1
@@ -153,7 +153,7 @@ def addPoint(x,y):
 				# increase num of points
 				# incrementPointNum()
 				pointNum += 1
-				
+
 				# finish drawing....
 				finishDraw()
 
@@ -167,7 +167,7 @@ def redrawKnot():
 	# erase everything
 	crossingPoints = []
 	canvas.delete('all')
-	
+
 	# draw crossings
 	for c in crossings:
 		# draw crossing
@@ -180,12 +180,12 @@ def redrawKnot():
 		x = refinedPoints[c]['x']
 		y = refinedPoints[c]['y']
 		canvas.create_oval(x - 3, y - 3, x + 3, y + 3, outline = black, fill = black, width = 0.2)
-	
+
 	# draws  bezier curves
 	for x in range (0, refinedPointsNum-1,1):
 		p = refinedPoints["rp"+str(x)]
 		np = refinedPoints["rp"+str(p['np'])]
-		
+
 		# check if you need to remove parts of the curve
 		if p['used'] == 0:
 			a=0
@@ -194,7 +194,7 @@ def redrawKnot():
 				a=0
 			else:
 				a=0.25
-				
+
 		if np['used'] == 0:
 			b=1
 		else:
@@ -202,7 +202,7 @@ def redrawKnot():
 				b=1
 			else:
 				b=0.75
-		
+
 		drawBezierCurve(p['x0'],p['y0'],p['x1'],p['y1'],p['x2'],p['y2'],p['x3'],p['y3'],a,b)
 
 
@@ -224,15 +224,15 @@ def computeTangentsAndLenghts():
 		np = points["p"+str(p['np'])]
 		pp = points["p"+str(p['pp'])]
 		# computes the difference
-		p["dx"] = np["x"] - pp["x"]  
+		p["dx"] = np["x"] - pp["x"]
 		p["dy"] = np["y"] - pp["y"]
 #		print(p)
-	
+
 	# finds the controll points for the Bezier curves
 	for x in range (0, pointNum-1,1):
 		p = points["p"+str(x)]
 		np = points["p"+str(p['np'])]
-		# this controls the smoothness... 
+		# this controls the smoothness...
 		d = 4
 		# set up control points
 		p['x0'] = p["x"]
@@ -243,7 +243,7 @@ def computeTangentsAndLenghts():
 		p['y2'] = np["y"] - np["dy"]/d
 		p['x3'] = np["x"]
 		p['y3'] = np["y"]
-		
+
 		# get the lenght
 		p['len'] = lenghtsOfBezierCurve(p['x0'],p['y0'],p['x1'],p['y1'],p['x2'],p['y2'],p['x3'],p['y3'])
 #		print(p)
@@ -254,10 +254,10 @@ def computeTangentsAndLenghts():
 def pointOnBezierCurve(x0,y0,x1,y1,x2,y2,x3,y3,v):
 	x = x0*(1-v)**3 + x1*3*v*(1-v)**2 + x2*3*v**2*(1-v)+x3*v**3
 	y = y0*(1-v)**3 + y1*3*v*(1-v)**2 + y2*3*v**2*(1-v)+y3*v**3
-	return x,y 
+	return x,y
 
 # computes lenght of Bezeier curve
-def lenghtsOfBezierCurve(x0,y0,x1,y1,x2,y2,x3,y3):	
+def lenghtsOfBezierCurve(x0,y0,x1,y1,x2,y2,x3,y3):
 	xx = x0
 	yy = y0
 	l = 0
@@ -271,12 +271,12 @@ def lenghtsOfBezierCurve(x0,y0,x1,y1,x2,y2,x3,y3):
 		yy = yyy
 	return l
 
-# draw part of Bezier Curve	
+# draw part of Bezier Curve
 def drawBezierCurve(x0,y0,x1,y1,x2,y2,x3,y3,a,b):
-	
+
 	xx,yy = pointOnBezierCurve(x0,y0,x1,y1,x2,y2,x3,y3,a)
 	#  number of segments -- we already added extra points so there is no need of large numbers
-	res=20		
+	res=20
 	for u  in range (int(a*res+1),int(b*res),1):
 		v = u/res
 		xxx,yyy = pointOnBezierCurve(x0,y0,x1,y1,x2,y2,x3,y3,v)
@@ -306,7 +306,7 @@ def refinePoints():
 		morePoints = int(p['len'] / step)
 		# adds extra points if necessary
 		for j in range(1,morePoints,1):
-			x,y = pointOnBezierCurve(p['x0'],p['y0'],p['x1'],p['y1'],p['x2'],p['y2'],p['x3'],p['y3'], j/morePoints) 
+			x,y = pointOnBezierCurve(p['x0'],p['y0'],p['x1'],p['y1'],p['x2'],p['y2'],p['x3'],p['y3'], j/morePoints)
 			refinedPoints['rp'+str(refinedPointsNum)] = {'x':x, 'y':y, 'used':0,'old':-1}
 			refinedPointsNum += 1
 		i +=1
@@ -325,7 +325,7 @@ def refinePoints():
 			morePoints = int(p['len'] / step)
 			# adds extra points if necessary
 			for j in range(1,morePoints,1):
-				x,y = pointOnBezierCurve(p['x0'],p['y0'],p['x1'],p['y1'],p['x2'],p['y2'],p['x3'],p['y3'], j/morePoints) 
+				x,y = pointOnBezierCurve(p['x0'],p['y0'],p['x1'],p['y1'],p['x2'],p['y2'],p['x3'],p['y3'], j/morePoints)
 				refinedPoints['rp'+str(refinedPointsNum)] = {'x':x, 'y':y, 'used':0,'old':-1}
 				refinedPointsNum += 1
 			i += 1
@@ -335,7 +335,7 @@ def refinePoints():
 
 #	for r in refinedPoints:
 #		print(r,refinedPoints[r])
-		
+
 	# recomputes the adjecent points and slopes
 	for x in range (0, refinedPointsNum-1,1):
 		p = refinedPoints['rp'+str(x)]
@@ -349,11 +349,11 @@ def refinePoints():
 			p['pp'] = refinedPointsNum-2
 		np = refinedPoints['rp'+str(p['np'])]
 		pp = refinedPoints['rp'+str(p['pp'])]
-		p["dx"] = np["x"] - pp["x"]  
+		p["dx"] = np["x"] - pp["x"]
 		p["dy"] = np["y"] - pp["y"]
 #		print(p)
 
-	# recomputes the control points	
+	# recomputes the control points
 	for x in range (0, refinedPointsNum-1,1):
 		p = refinedPoints["rp"+str(x)]
 		np = refinedPoints["rp"+str(p['np'])]
@@ -375,12 +375,12 @@ def getEdges():
 	startPoint = refinedPoints["rp0"]
 	crossPoint = 'c'+str(startPoint["crossing"])
 	crossType="u"
-	tuples.append([startPoint["x"],startPoint["y"],0])
+	tuples.append([startPoint["x"], 0, startPoint["y"]])
 	index=1
 	while index <= refinedPointsNum -1:
 		name = "rp" + str(index)
 		p = refinedPoints[name]
-		tuples.append([p["x"], p["y"], 0])
+		tuples.append([p["x"], 0, p["y"]])
 		if p["used"] == 1:
 			# we have finshed a whole edge...
 			newcrossPoint = 'c'+str(p["crossing"])
@@ -389,19 +389,19 @@ def getEdges():
 				newcrossType="u"
 			else:
 				newcrossType="o"
-				
+
 			endPoint = refinedPoints[name]
-			e = Edge(tuples, Point(startPoint["x"], startPoint["y"], 0), Point(endPoint["x"], endPoint["y"], 0))
+			e = Edge(tuples, Point(startPoint["x"], 0, startPoint["y"]), Point(endPoint["x"], 0,  endPoint["y"]))
 			# print(tuples)
 			edges.append(e)
 			# links the edge to the corssings
 			crossings[crossPoint]["o" + crossType] = e
-			crossings[newcrossPoint]["i" + newcrossType] = e			
+			crossings[newcrossPoint]["i" + newcrossType] = e
 			startPoint = endPoint
 			crossPoint = newcrossPoint
 			crossType = newcrossType
 			tuples = []
-			tuples.append([startPoint["x"],startPoint["y"],0])
+			tuples.append([startPoint["x"],0, startPoint["y"]])
 
 		index = index+1
 
@@ -429,7 +429,7 @@ def flipCrossing(event):
 		s = c['iu']
 		c['io'] = s
 		c['iu'] = f
-		
+
 		# redraw the knot
 		redrawKnot()
 
@@ -445,7 +445,7 @@ def finishDraw():
 				points['p'+str(pointNum-1)]['used'] = 0
 				c = 'c'+str(points['p0']['crossing'])
 				del crossings[c]
-			
+
 			refinePoints()
 			getEdges()
 			redrawKnot()
@@ -459,19 +459,20 @@ def finishDraw():
 def outputKnot():
 	strands = []
 	cross = []
-	
+
 	for c in crossings:
 		s = Strands(crossings[c]["oo"], crossings[c]["ou"], crossings[c]["io"], crossings[c]["iu"])
 		strands.append(s)
 #		print(s)
-		cr = Crossing(Point(crossings[c]["x"], crossings[c]["y"], 0), s)
+		cr = Crossing(Point(crossings[c]["x"], 0,  crossings[c]["y"]), s)
 		cross.append(cr)
 #		print(cr)
 
-	
+
 	knotObj =  Knot(cross)
 	printEdges()
 	printKnot(knotObj)
+	SeifertMaker.createSeifertSurface(knotObj)
 	return knotObj
 
 # prints knot
@@ -479,7 +480,7 @@ def printKnot(knotObj):
 	print("--- Knot Begin  ---")
 	print(knotObj)
 	print("--- Knot End    ---")
-	
+
 # prints edges
 def printEdges():
 	i = 0
@@ -491,13 +492,13 @@ def printEdges():
 
 #reset variables and clear canvas
 def restart():
-	global points, crossings, pointNum, crossingNum, edges, refinedPoints,refinedPointsNum 
-	global isValid, isClosed, isFirstPointCrossing, isFinished 
+	global points, crossings, pointNum, crossingNum, edges, refinedPoints,refinedPointsNum
+	global isValid, isClosed, isFirstPointCrossing, isFinished
 
 	points = {}
-	crossings = {} 
+	crossings = {}
 	pointNum = 0
-	crossingNum = 0 
+	crossingNum = 0
 	refinedPoints = {}
 	refinedPointsNum = 0
 	edges=[]
@@ -538,5 +539,3 @@ canvas.pack()
 #Bind placepoint action to canvas
 canvas.bind('<ButtonPress-1>', newPlacePoint)
 root.mainloop()
-
-
