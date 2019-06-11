@@ -14,6 +14,9 @@ isFirstPointCrossing = False
 isFinished = False
 
 pointSize = 25
+pointDistanse = 10;
+
+
 pointNum = 0
 crossingNum = 0
 lastCrossing = 0
@@ -176,11 +179,11 @@ def redrawKnot():
 		canvas.create_oval(x - (pointSize / 2), y - (pointSize / 2), x + (pointSize / 2), y + (pointSize / 2), outline = black, fill = white, width = 1)
 
 	# draw points on the edges
-	for c in refinedPoints:
-		x = refinedPoints[c]['x']
-		y = refinedPoints[c]['y']
-		canvas.create_oval(x - 3, y - 3, x + 3, y + 3, outline = black, fill = black, width = 0.2)
-
+#	for c in refinedPoints:
+#		x = refinedPoints[c]['x']
+#		y = refinedPoints[c]['y']
+#		canvas.create_oval(x - 2, y - 2, x + 2, y + 2, outline = black, fill = black, width = 0.2)
+	
 	# draws  bezier curves
 	for x in range (0, refinedPointsNum-1,1):
 		p = refinedPoints["rp"+str(x)]
@@ -193,16 +196,16 @@ def redrawKnot():
 			if crossings['c'+str(p['crossing'])]['firstPoint'] == p['old']:
 				a=0
 			else:
-				a=0.25
-
+				a=0.75
+				
 		if np['used'] == 0:
 			b=1
 		else:
 			if crossings['c'+str(np['crossing'])]['firstPoint'] == np['old']:
 				b=1
 			else:
-				b=0.75
-
+				b=0.25
+		
 		drawBezierCurve(p['x0'],p['y0'],p['x1'],p['y1'],p['x2'],p['y2'],p['x3'],p['y3'],a,b)
 
 
@@ -276,7 +279,7 @@ def drawBezierCurve(x0,y0,x1,y1,x2,y2,x3,y3,a,b):
 
 	xx,yy = pointOnBezierCurve(x0,y0,x1,y1,x2,y2,x3,y3,a)
 	#  number of segments -- we already added extra points so there is no need of large numbers
-	res=20
+	res=10		
 	for u  in range (int(a*res+1),int(b*res),1):
 		v = u/res
 		xxx,yyy = pointOnBezierCurve(x0,y0,x1,y1,x2,y2,x3,y3,v)
@@ -289,7 +292,6 @@ def drawBezierCurve(x0,y0,x1,y1,x2,y2,x3,y3,a,b):
 def refinePoints():
 	global refinedPointsNum
 	# the average distance between points
-	step = 40;
 	if isFirstPointCrossing:
 		i=0
 	else:
@@ -303,7 +305,7 @@ def refinePoints():
 		if p['used']!=0:
 			refinedPoints['rp'+str(refinedPointsNum)]['crossing']= p['crossing']
 		refinedPointsNum += 1
-		morePoints = int(p['len'] / step)
+		morePoints = int(p['len'] / pointDistanse)
 		# adds extra points if necessary
 		for j in range(1,morePoints,1):
 			x,y = pointOnBezierCurve(p['x0'],p['y0'],p['x1'],p['y1'],p['x2'],p['y2'],p['x3'],p['y3'], j/morePoints)
@@ -322,7 +324,7 @@ def refinePoints():
 			if p['used']!=0:
 				refinedPoints['rp'+str(refinedPointsNum)]['crossing']= p['crossing']
 			refinedPointsNum += 1
-			morePoints = int(p['len'] / step)
+			morePoints = int(p['len'] / pointDistanse)
 			# adds extra points if necessary
 			for j in range(1,morePoints,1):
 				x,y = pointOnBezierCurve(p['x0'],p['y0'],p['x1'],p['y1'],p['x2'],p['y2'],p['x3'],p['y3'], j/morePoints)
