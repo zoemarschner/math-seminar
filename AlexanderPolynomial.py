@@ -13,7 +13,7 @@ def createAlexanderPolynomial(knot):
     #rem adjacent columns
     #just always removes first column and one adjacent to it
     for i in range(1, len(regions)):
-        if len(regions[0].intersection(regions[i])) > 0:
+        if len(set(regions[0]).intersection(set(regions[i]))) > 0:
             for row in matrix:
                 del row[i]
                 del row[0]
@@ -50,7 +50,7 @@ def createRelativeStrands(strands):
 #returns list of lists of edges that form regions in the knot
 def findRegions(knot):
     #set of frozen sets of edges
-    regions = set([])
+    regions = []
 
     for crossing in knot.crossings:
         relStrands = createRelativeStrands(crossing.strands)
@@ -69,10 +69,12 @@ def findRegions(knot):
             for i in range(len(sortedNextStrands)): #i here represents left or right
                 nextStrand = sortedNextStrands[i][1] #nextStrand holds strand that we are looking for
                                                      #with reference frame of curCrossing
-                region = [strand.edge, nextStrand.edge]
+                region = [strand.edge]
                 curCrossing = crossing
 
                 while nextStrand.edge != strand.edge: #move around regions until you encounter same strand
+                    region.append(nextStrand.edge)
+
                     for nextCrossing in knot.crossings: #find the other crossing that involves nextStrand (can be same crossing)
 
                         #crossing should include strand that is the same edge but opposite outness
@@ -83,7 +85,6 @@ def findRegions(knot):
                                 break #found correct crossing, continue with the crossing for loop
                         else:
                             continue #no strands in crossing are the desired one, skip this crossing and continue in outer loop
-
 
                         #handles logic of choosing which strands to join next
                         #note case of twisted unknot where same strand can occur twice at a crossing
@@ -97,13 +98,17 @@ def findRegions(knot):
 
                         print(f"at {nextCrossing.coord} looking at {nextStrand} (redefined = {nextStrandThisCrossing}), new next Strand {[f'{str(x[1])} at angle {x[0]}' for x in sortedNewNextStrands]}")
 
-                        region.append(nextStrand.edge)
                         nextStrand = sortedNewNextStrands[i][1]
                         curCrossing = nextCrossing
 
                         break
 
-                regions.add(frozenset(region))
+                for existingRegion in regions:
+                    if set(region) == set(existingRegion):
+                        break
+                else:
+                    regions.append(region)
+
                 print(f"added region {[str(x) for x in region]}")
         print(f"regions so far crossing at {crossing.coord}")
         for region in regions:
@@ -126,16 +131,19 @@ def createMatrix(knot, regions):
         #these are the pairs of edges that correspond to the polynomials defined above
         adjacentEdges = [[s.iu, s.oo], [s.oo, s.ou], [s.ou, s.io], [s.io, s.iu]]
 
-        row = [ Polynomial((0)) for region in regions]
+        row = [Polynomial((0)) for region in regions]
         orientation = crossing.orientation()
 
         for index in range(len(adjacentEdges)):
             for i in range(len(regions)):
-                generalTruth = len(set(adjacentEdges[index])) == 2 and set(adjacentEdges[index]) <= regions[i]
-                loopTruth = len(set(adjacentEdges[index])) == 1 and set(adjacentEdges[index]) == regions[i]
-                if generalTruth or loopTruth: #this region contains both the edges
-                    row[i] = polynomialsPositive[index] if (orientation > 0) else polynomialsNegative[index]
-                    break
+                if set(adjacentEdges[index]) <= set(regions[i]):
+                    print(f"edges in list {adjacentEdges[index]}, {regions[i]}")
+                    edgeIndex = regions[i].index(adjacentEdges[index][0])
+                    before = regions[i][(edgeIndex - 1) % len(regions[i])] == adjacentEdges[index][1]
+                    after = regions[i][(edgeIndex + 1) % len(regions[i])] == adjacentEdges[index][1]
+                    if before or after: #this region contains both the edges
+                        row[i] = polynomialsPositive[index] if (orientation > 0) else polynomialsNegative[index]
+                        break
 
         matrix.append(row)
 

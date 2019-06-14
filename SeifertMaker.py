@@ -308,8 +308,8 @@ def checkEnclosed(circle1, circle2):
 
 #----functions for outputting obj----#
 
-def writeToFile(string):
-    fileName = "knot.obj"
+def writeToFile(string, name="knot.obj"):
+    fileName = name
     outputFile = open(fileName, "w")
     outputFile.write(string)
     outputFile.close()
@@ -425,9 +425,8 @@ def isValidEar(index, curVertices):
     #check whether the vertex is concave
     vector1 = createVector(check, prev)
     vector2 = createVector(check, next)
-
     cross = crossProduct(vector1, vector2)
-    if cross[1] < 0 != orientation([vertexPair[0] for vertexPair in curVertices]):
+    if (cross[1] < 0) == orientation([vertexPair[0] for vertexPair in curVertices]):
         return False
 
     return True
