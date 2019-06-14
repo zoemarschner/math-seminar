@@ -1,3 +1,6 @@
+import math
+from VectorOperations import *
+
 """NOTES: make sure there is ONLY ONE REFERENCE to each edge and crossing"""
 
 class Knot:
@@ -41,6 +44,13 @@ class Crossing:
             if inStrand.origin != self.coord:
                 inStrand.reverse()
 
+    """returns +1 or -1 based on the orientaion of the crossing"""
+    def orientation(self):
+        ooVec = createVector(self.strands.oo.vertices[0], self.strands.oo.vertices[1])
+        uoVec = createVector(self.strands.ou.vertices[0], self.strands.ou.vertices[1])
+        crossY = crossProduct(ooVec, uoVec)[1]
+        return crossY / abs(crossY)
+
 class Edge:
     """an edge is a list of verticies, going from one point to another
        verticies is a list of tuples (x, y, z) that describes the line between the two points
@@ -68,6 +78,13 @@ class Edge:
         self.origin = self.dest
         self.dest = temp
 
+    """raises the edge (note: changes vertices but not origin/dest)"""
+    def raiseEdge(self, yUnits):
+        for i in range(len(self.vertices)):
+            oldPt = self.vertices[i]
+            newPt = (oldPt[0], oldPt[1] + yUnits, oldPt[2])
+            self.vertices[i] = newPt
+
 class Point:
     """a Point is a specific point in the graph, with coordinates in 3space (x, y, z)
        this class is used for points that have an 'identity'/will need to be compared
@@ -79,6 +96,9 @@ class Point:
 
     def __str__(self):
         return f"({self.x}, {self.y}, {self.z})"
+
+    def __eq__(self, other):
+        return self.x == other.x and self.y == other.y and self.z == other.z
 
 class Strands:
     """Strands represetns the four edges that go into any crossing
@@ -96,11 +116,34 @@ class Strands:
     def __str__(self):
         return f"\n\tout & over: {self.oo}\n\tout & under: {self.ou}\n\tin & over: {self.io}\n\tin & under: {self.iu}"
 
+    def getStrands(self):
+        return [self.oo, self.ou, self.io, self.iu]
+
     def getInStrands(self):
         return [self.io, self.iu]
 
     def getOutStrands(self):
         return [self.oo, self.ou]
 
+    def getOverStrands(self):
+        return [self.oo, self.io]
+
+    def getUnderStrands(self):
+        return [self.ou, self.iu]
+
+    #vector for this strand, always pointing out of the crossing
+    #gets the vector given that strand is out if out is true and in if not
+    #can be used in cases where strand appers twice
+    def getVector(self, strand, out):
+        if out:
+            return createVector(strand.vertices[0], strand.vertices[1])
+        else:
+            return createVector(strand.vertices[-1], strand.vertices[-2])
+
+    #strands joined in seifert algorithm
     def strandsJoinedinAlgorithm(self):
         return [[self.io, self.ou], [self.iu, self.oo]]
+
+    #returns whether given strand is an in strand, assuming that it is in the knot
+    def strandIsIn(self, strand):
+        return strand in self.getInStrands()

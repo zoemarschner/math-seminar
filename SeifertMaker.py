@@ -1,27 +1,29 @@
 import math
 from VectorOperations import *
-
+from AlexanderPolynomial import *
+import copy
 STAGGER_PROPORTIONALITY_CONSTANT = 0.5
 
 def createSeifertSurface(knot):
-    knot.resolveOrientation()
-    print(knot)
-    seifertCircles = findCircles(knot)
+    knot.resolveOrientation() #make sure lists of vectors align with orientation of edges
+    mutateKnot = copy.deepcopy(knot) #copy knot so that removing vertices doesn't mess stuff up
 
-    genus = (len(knot.crossings) - len(seifertCircles) + 1)//2
+    polynomial = createAlexanderPolynomial(knot) #calcultes the alexander polynomial
+    print(polynomial)
+
+    seifertCircles = findCircles(mutateKnot) #find seifert circle
+
+    #caluclate genus from seifert circles
+    genus = (len(mutateKnot.crossings) - len(seifertCircles) + 1)//2
     print(genus)
 
+    #move seifert circles to differnt leveles
     staggerCircles(seifertCircles)
 
-    for c in seifertCircles:
-        str = ""
-        for pt in createVertexArray(c):
-            str += f"{pt[0]}, {pt[2]}\n"
+    #create twisted strips
+    strips = createBands(mutateKnot, seifertCircles)
 
-        print(f"circle with points: {str}")
-
-    strips = createBands(knot, seifertCircles)
-
+    #draw the created shapes
     circleOutput = drawCircles(seifertCircles)
     outputString = circleOutput[0]
 
@@ -85,8 +87,13 @@ def createBands(knot, seifertCircles):
         ends = []
 
         for joint in joints:
-            joint[0].vertices = joint[0].vertices[:-REM_VERTICES]
-            joint[1].vertices = joint[1].vertices[REM_VERTICES:]
+            verticesToRemove = REM_VERTICES
+            #ensure that you don't take too much of the edge off
+            if (min(len(joint[0].vertices), len(joint[1].vertices)) - 2) < (REM_VERTICES * 2) :
+                verticesToRemove = (min(len(joint[0].vertices), len(joint[1].vertices)) - 2) // 2
+
+            joint[0].vertices = joint[0].vertices[:-verticesToRemove]
+            joint[1].vertices = joint[1].vertices[verticesToRemove:]
             ends.append((joint[0].vertices[-1], joint[1].vertices[0]))
 
             for circle in seifertCircles:
@@ -132,7 +139,6 @@ def createBands(knot, seifertCircles):
 
         dT = 1 / (points - 1)
 
-        orientFirst = orientation(createVertexArray(circlesJoined[0]))
 
         #linear interpolation between first end vector and second end vector
         dComponents = [(end1 - end0) / (points - 1) for end0, end1 in zip(endVectors[0], endVectors[1])]
@@ -168,7 +174,7 @@ def createBands(knot, seifertCircles):
 
             #use trig to find points around circle
             #initial and final points should be on u axis
-            theta = math.sin(t * math.pi / 2) ** 2 * math.pi
+            theta = -1 * math.sin(t * math.pi / 2) ** 2 * math.pi * crossing.orientation()
             r = (dDiameter * pt + initalDiameter) / 2
             #r = 1
 
@@ -190,9 +196,6 @@ def createBands(knot, seifertCircles):
         print(f"rail1 pt 1 is {rail1[0]}, rail2 pt1 is {rail2[0]}")
         strips.append([rail1, rail2])
     return strips
-
-#---methods for manipulating points and vectors---#
-
 
 #---logic for staggering the seifert circles ----#
 def staggerCircles(circles):
