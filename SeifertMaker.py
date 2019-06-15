@@ -2,7 +2,7 @@ import math
 from subprocess import Popen, PIPE, TimeoutExpired
 from VectorOperations import *
 from AlexanderPolynomial import *
-import copy
+import copy, sys
 
 STAGGER_PROPORTIONALITY_CONSTANT = 0.5
 
@@ -285,7 +285,7 @@ def checkEnclosed(circle1, circle2):
 
 def startObjViewer(outputString):
     #opens up subprocess of objviewer
-    process = Popen(["python3", "ObjViewer.py"], stdin=PIPE)
+    process = Popen([sys.executable, "ObjViewer.py"], stdin=PIPE)
 
     #gives string to objviewer standrad input
     process.stdin.write(outputString.encode())
@@ -424,7 +424,7 @@ def gaussAreaFormula(vertexArray):
     for i in range(len(vertexArray)):
         v1 = vertexArray[i]
         v2 = vertexArray[(i + 1) % len(vertexArray)]
-        sum += (v1[0] + v2[0])*(v2[2] - v1[2])
+        sum += (v1[0] + v2[0]) * (v2[2] - v1[2])
 
     return sum / 2
 
