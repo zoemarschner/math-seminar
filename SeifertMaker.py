@@ -1,7 +1,9 @@
 import math
+from subprocess import Popen, PIPE, TimeoutExpired
 from VectorOperations import *
 from AlexanderPolynomial import *
 import copy
+
 STAGGER_PROPORTIONALITY_CONSTANT = 0.5
 
 def createSeifertSurface(knot):
@@ -9,14 +11,13 @@ def createSeifertSurface(knot):
     mutateKnot = copy.deepcopy(knot) #copy knot so that removing vertices doesn't mess stuff up
 
     polynomial = createAlexanderPolynomial(knot) #calcultes the alexander polynomial
-    print(polynomial)
-
+    print(f"ALEXANDER'S POLYNOMIAL: {polynomial[0]}")
+    print(f"LOWER BOUND FOR GENUS: {polynomial[1]} (from Alexander's polynomial)")
     seifertCircles = findCircles(mutateKnot) #find seifert circle
 
     #caluclate genus from seifert circles
-    genus = (len(mutateKnot.crossings) - len(seifertCircles) + 1)//2
-    print(genus)
-
+    seifertGenus = (len(mutateKnot.crossings) - len(seifertCircles) + 1)//2
+    print(f"UPPER BOUND FOR GENUS: {seifertGenus} (from Seifert's algorithm)")
     #move seifert circles to differnt leveles
     staggerCircles(seifertCircles)
 
@@ -30,7 +31,7 @@ def createSeifertSurface(knot):
     stripOutput = drawStrips(strips, startIndex = circleOutput[1])
     outputString += stripOutput[0]
 
-    writeToFile(outputString)
+    startObjViewer(outputString)
 
 #----Main functions in Seifert's algorithm----#
 #creates arrays of edges represeting the seifert circles
@@ -56,29 +57,22 @@ def findCircles(knot):
 
     #reorder lists of edges that represent circle so that verticies are
     #in order (based on orientation)
-    print(f"REORDERING CIRCLES")
     seifertCircles = list(map(lambda set: list(set), seifertCircles))
     for circle in seifertCircles:
-        print(f"circle before is {[str(edge) for edge in circle ]}")
         for i in range(0, len(circle) - 1):
             edgeToFind = circle[i].dest
             for j in range(i + 1, len(circle)):
                 if circle[j].origin == edgeToFind:
                     if j != i + 1:
-                        print(f"switching {i} and {j}")
                         temp = circle[i + 1]
                         circle[i + 1] = circle[j]
                         circle[j] = temp
                     break
                 if j == len(circle) - 1:
                     raise Exception("Circle is not connected.")
-        print(f"circle after is {[str(edge) for edge in circle ]}")
-    print(f"END REORDERING CIRCLES")
-
     return seifertCircles
 
 def createBands(knot, seifertCircles):
-    print("CREATING TRI STRIPS")
     REM_VERTICES = 5
     strips = [] #lists of pairs of bands
     for crossing in knot.crossings:
@@ -117,12 +111,10 @@ def createBands(knot, seifertCircles):
             #if CCW and cross negative or CW and cross positive
             orient = orientation(createVertexArray(circlesJoined[i])) #True = CCW
             cross = crossProduct(perp, slopeVec)
-            print(f"at crossing {crossing.coord}, orientation is {orient}, cross initially {cross[1]}, perp is {perp}")
 
             if (cross[1] > 0) != orient:
-                print("flip")
                 perp = [-comp for comp in perp]
-            print(f"cross ater {crossProduct(perp, slopeVec)[1]}, perp is {perp}")
+
             controlPoints.append(vectorSum(midPoint(ends[i]), constMult(perp, controlPtAxisLength)))
 
         #perform bezier algorithm while creating rails
@@ -165,13 +157,6 @@ def createBands(knot, seifertCircles):
 
             vVec = normalize(crossProduct(uVec, wVec))
 
-            if t == 0:
-                print("vectors at first point")
-                print(f"ends = {ends[0]} {ends[1]}")
-                print(f"midPoint = {bezierPt}")
-                print(f"{wVec[0]}, {wVec[2]}")
-                print(f"{uVec[0]}, {uVec[2]}")
-
             #use trig to find points around circle
             #initial and final points should be on u axis
             theta = -1 * math.sin(t * math.pi / 2) ** 2 * math.pi * crossing.orientation()
@@ -193,7 +178,6 @@ def createBands(knot, seifertCircles):
             rail1.append(actualPts[0])
             rail2.append(actualPts[1])
 
-        print(f"rail1 pt 1 is {rail1[0]}, rail2 pt1 is {rail2[0]}")
         strips.append([rail1, rail2])
     return strips
 
@@ -260,7 +244,6 @@ def findIntersections(circles):
                 intersectionArray[i][j] = 1
                 intersectionArray[j][i] = 1
 
-    print(intersectionArray)
     return intersectionArray
 
 #checks whether circle1 is enclosed in circle2, with precondition that their sides never interesect
@@ -297,22 +280,18 @@ def checkEnclosed(circle1, circle2):
         p1XDist = (p1ZDist/totalZDist) * totalXDist
         xCoord = p1[0] - p1XDist
         if xCoord > point[0] and zValid:
-            print(f"intersection found with segment {p1} {p2}, xCoord = {xCoord}, zValid = {zValid}")
             intersections += 1
-    str = ""
-    for pt in circle2Arr:
-        str += f"({pt[0]},{pt[2]}),"
 
-    print(f"{point} point has {intersections} intersections with {str}")
     return intersections % 2 != 0
 
 #----functions for outputting obj----#
 
-def writeToFile(string, name="knot.obj"):
-    fileName = name
-    outputFile = open(fileName, "w")
-    outputFile.write(string)
-    outputFile.close()
+def startObjViewer(outputString):
+    process = Popen(["python3", "ObjViewer.py"], stdin=PIPE)
+    try:
+        process.communicate(input = outputString.encode(), timeout = 1)
+    except TimeoutExpired:
+        pass #no response expected
 
 #returns tuple of outputString to add and new starting index
 def createOutputString(vertices, relTriangles, startIndex):

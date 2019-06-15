@@ -183,7 +183,7 @@ def redrawKnot():
 #		x = refinedPoints[c]['x']
 #		y = refinedPoints[c]['y']
 #		canvas.create_oval(x - 2, y - 2, x + 2, y + 2, outline = black, fill = black, width = 0.2)
-	
+
 	# draws  bezier curves
 	for x in range (0, refinedPointsNum-1,1):
 		p = refinedPoints["rp"+str(x)]
@@ -197,7 +197,7 @@ def redrawKnot():
 				a=0
 			else:
 				a=0.75
-				
+
 		if np['used'] == 0:
 			b=1
 		else:
@@ -205,7 +205,7 @@ def redrawKnot():
 				b=1
 			else:
 				b=0.25
-		
+
 		drawBezierCurve(p['x0'],p['y0'],p['x1'],p['y1'],p['x2'],p['y2'],p['x3'],p['y3'],a,b)
 
 
@@ -279,7 +279,7 @@ def drawBezierCurve(x0,y0,x1,y1,x2,y2,x3,y3,a,b):
 
 	xx,yy = pointOnBezierCurve(x0,y0,x1,y1,x2,y2,x3,y3,a)
 	#  number of segments -- we already added extra points so there is no need of large numbers
-	res=10		
+	res=10
 	for u  in range (int(a*res+1),int(b*res),1):
 		v = u/res
 		xxx,yyy = pointOnBezierCurve(x0,y0,x1,y1,x2,y2,x3,y3,v)

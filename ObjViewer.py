@@ -1,6 +1,6 @@
 import pyglet
 from pyglet.gl import *
-from sys import argv
+from sys import argv, stdin
 from VectorOperations import *
 import re
 
@@ -16,8 +16,8 @@ FRONT_COLORS = [(255/255, 17/255, 17/255, 1), (255/255, 17/255, 17/255, 1)]
 mode = 0 #0 for light mode, 1 for dark mode
 
 blackAndWhite = False
-BACK_BW = (.2, .2, .2, 1)
-FRONT_BW = (.8, .8, .8, 1)
+BACK_BW = (.3, .3, .3, 1)
+FRONT_BW = (.7, .7, .7, 1)
 
 openFile = False
 
@@ -84,12 +84,13 @@ def render(string):
             blackAndWhite = not blackAndWhite
             updateColors()
         elif symbol == 119: #character = w; write string to file (if opened from string)
-            print("hi3")
+            if not openFile:
+                writeToFile(string)
 
     setup()
     batch = pyglet.graphics.Batch()
     parseObj(string, batch)
-    
+
     pyglet.app.run()
 
 
@@ -105,12 +106,12 @@ def setup():
 
     #set properties of lights
     #diffuse is base color, specular is color of highlight
-    glLightfv(GL_LIGHT0, GL_POSITION, vec(.5, .5, 1, 0))
+    glLightfv(GL_LIGHT0, GL_POSITION, vec(-1, 1.5, 0, 1))
     glLightfv(GL_LIGHT0, GL_SPECULAR, vec(.5, .5, 1, 1))
-    glLightfv(GL_LIGHT0, GL_DIFFUSE, vec(1, 1, 1, 1))
-    glLightfv(GL_LIGHT1, GL_POSITION, vec(1, 0, .5, 0))
-    glLightfv(GL_LIGHT1, GL_DIFFUSE, vec(.5, .5, .5, 1))
-    glLightfv(GL_LIGHT1, GL_SPECULAR, vec(1, 1, 1, 1))
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, vec(.8, .8, .8, 1))
+    glLightfv(GL_LIGHT1, GL_POSITION, vec(1.5, -2.5, 0, 1))
+    glLightfv(GL_LIGHT1, GL_DIFFUSE, vec(0.2, 0.2, 0.2, 1))
+    glLightfv(GL_LIGHT1, GL_SPECULAR, vec(0.2, 0.2, 0.2, 1))
 
     #set properties of materials
     updateColors()
@@ -133,7 +134,6 @@ def updateColors():
 
 
 #---parsing functions---#
-
 def parseObj(string, batch):
     vertex_list = []
     face_list = []
@@ -168,7 +168,7 @@ def parseObj(string, batch):
 
             vector1 = createVector(vertex1, vertex2)
             vector2 = createVector(vertex1, vertex3)
-            normal = normalize(crossProduct(vector1, vector2))
+            normal = crossProduct(vector1, vector2)
 
             for key in indices:
                 if key in vertex_normals:
@@ -198,5 +198,16 @@ def parseObj(string, batch):
 
     batch.add_indexed(len(vertex_list)//3, GL_TRIANGLES, None, face_list, ('v3f', vertex_list), ('n3f', calculatedVertexNormals))
 
-#if called from the command line open obj file in argv[1]
-renderObjFile(argv[1])
+def writeToFile(string, name="knot.obj"):
+    fileName = name
+    outputFile = open(fileName, "w")
+    outputFile.write(string)
+    outputFile.close()
+
+if __name__ == '__main__':
+    #if called from the command line open obj file in argv[1] if present
+    #otherwise read from standard in to get string
+    if len(argv) > 1:
+        renderObjFile(argv[1])
+    else:
+        renderObjString(stdin.read())
