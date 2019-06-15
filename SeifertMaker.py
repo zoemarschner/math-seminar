@@ -30,8 +30,14 @@ def createSeifertSurface(knot):
 
     stripOutput = drawStrips(strips, startIndex = circleOutput[1])
     outputString += stripOutput[0]
-
+    writeToFile(outputString)
     startObjViewer(outputString)
+
+def writeToFile(string, name="knot.obj"):
+    fileName = name
+    outputFile = open(fileName, "w")
+    outputFile.write(string)
+    outputFile.close()
 
 #----Main functions in Seifert's algorithm----#
 #creates arrays of edges represeting the seifert circles
@@ -184,28 +190,19 @@ def createBands(knot, seifertCircles):
 #---logic for staggering the seifert circles ----#
 def staggerCircles(circles):
     intersections = findIntersections(circles)
-    staggerDistance = None #only calculate this if needed, but store it once you do
+
+    #computes the area of each cricle
+    #store this so that it can be used later
+    areaArray = [area(createVertexArray(circle)) for circle in circles]
+    staggerDistance = (max(areaArray) ** 0.5) * STAGGER_PROPORTIONALITY_CONSTANT
 
     while twoDArraySum(intersections) != 0:
-        baseCircle = mostIntersections(intersections)
+        baseCircle = mostIntersections(intersections, areaArray)
         for i in range(len(intersections[baseCircle])):
             if intersections[baseCircle][i] == 1:
-                if staggerDistance is None:
-                    staggerDistance =  responsiveStaggeDistance(circles)
                 raiseCircle(circles[i], staggerDistance)
                 intersections[baseCircle][i] = 0
                 intersections[i][baseCircle] = 0
-
-#returns value to be used for stagger distance, related to sqaure root of the area of largest circle
-def responsiveStaggeDistance(circles):
-    maxArea = area(createVertexArray(circles[0]))
-    maxIndex = 0
-    for i in range(1, len(circles)):
-        iArea = area(createVertexArray(circles[i]))
-        if iArea > maxArea:
-            maxArea = iArea
-            maxIndex = i
-    return (maxArea**0.5) * STAGGER_PROPORTIONALITY_CONSTANT
 
 def raiseCircle(circle, amount):
     for edge in circle:
@@ -218,16 +215,16 @@ def twoDArraySum(array):
         total += sum(row)
     return total
 
-#returns index of circle which intersects the most other circles
-def mostIntersections(intersectionArray):
+#returns index of circle which intersects the most other circles, which will be base
+def mostIntersections(intersectionArray, areaArray):
     maxIndex = 0
     maxIntersections = sum(intersectionArray[0])
     for i in range(1, len(intersectionArray)):
         intersections = sum(intersectionArray[i])
-        if intersections > maxIntersections:
+        #looking for one with greatest number intersections, ties resolved as one with greates area
+        if (intersections > maxIntersections) or ((intersections == maxIntersections) and (areaArray[i] > areaArray[maxIndex])) :
             maxIndex = i
             maxIntersections = intersections
-
     return maxIndex
 
 
@@ -287,11 +284,12 @@ def checkEnclosed(circle1, circle2):
 #----functions for outputting obj----#
 
 def startObjViewer(outputString):
+    #opens up subprocess of objviewer
     process = Popen(["python3", "ObjViewer.py"], stdin=PIPE)
-    try:
-        process.communicate(input = outputString.encode(), timeout = 1)
-    except TimeoutExpired:
-        pass #no response expected
+
+    #gives string to objviewer standrad input
+    process.stdin.write(outputString.encode())
+    process.stdin.close()
 
 #returns tuple of outputString to add and new starting index
 def createOutputString(vertices, relTriangles, startIndex):

@@ -1,7 +1,7 @@
 import pyglet
 from pyglet.gl import *
 from sys import argv, stdin
-from VectorOperations import *
+import VectorOperations as vecop
 import re
 
 rx = ry = rz = 0
@@ -16,8 +16,8 @@ FRONT_COLORS = [(255/255, 17/255, 17/255, 1), (255/255, 17/255, 17/255, 1)]
 mode = 0 #0 for light mode, 1 for dark mode
 
 blackAndWhite = False
-BACK_BW = (.3, .3, .3, 1)
-FRONT_BW = (.7, .7, .7, 1)
+BACK_BW = (.2, .2, .2, 1)
+FRONT_BW = (.8, .8, .8, 1)
 
 openFile = False
 
@@ -31,6 +31,7 @@ def renderObjFile(fileName):
     file = open(fileName)
     if file.mode == 'r':
         string = file.read()
+    file.close()
 
     render(string)
 
@@ -166,9 +167,9 @@ def parseObj(string, batch):
             vertex2 = vertex_list[((indices[1]) * 3) : ((indices[1] + 1) * 3)]
             vertex3 = vertex_list[((indices[2]) * 3) : ((indices[2] + 1) * 3)]
 
-            vector1 = createVector(vertex1, vertex2)
-            vector2 = createVector(vertex1, vertex3)
-            normal = crossProduct(vector1, vector2)
+            vector1 = vecop.createVector(vertex1, vertex2)
+            vector2 = vecop.createVector(vertex1, vertex3)
+            normal = vecop.crossProduct(vector1, vector2)
 
             for key in indices:
                 if key in vertex_normals:
@@ -192,10 +193,9 @@ def parseObj(string, batch):
     for index, normals in sorted(vertex_normals.items()):
         sum = normals[0]
         for i in range(1, len(normals)):
-            sum = vectorSum(sum, normals[i])
+            sum = vecop.vectorSum(sum, normals[i])
 
-        calculatedVertexNormals += normalize(sum)
-
+        calculatedVertexNormals += vecop.normalize(sum)
     batch.add_indexed(len(vertex_list)//3, GL_TRIANGLES, None, face_list, ('v3f', vertex_list), ('n3f', calculatedVertexNormals))
 
 def writeToFile(string, name="knot.obj"):
@@ -210,4 +210,8 @@ if __name__ == '__main__':
     if len(argv) > 1:
         renderObjFile(argv[1])
     else:
-        renderObjString(stdin.read())
+        inString = ""
+        for line in stdin:
+            inString += line
+
+        renderObjString(inString)

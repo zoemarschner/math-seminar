@@ -49,7 +49,6 @@ def angleBetween(vector1, vector2):
     cross = crossProduct(vector1, vector2)
     if cross[1] < 0:
         angle = 2 * math.pi - angle
-    print(f"angleBetween ({vector1[0]}, {vector1[2]}), ({vector2[0]}, {vector2[2]}) is {angle}")
     return angle
 
 def crossProduct(vector1, vector2):

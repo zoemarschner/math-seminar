@@ -5,7 +5,6 @@ import copy
 #create the alexander polynomial of the knot in the standrad form (symmetrical)
 #returns tuple of string representing polynomial and the genus
 def createAlexanderPolynomial(knot):
-    print("hi from alexander polynomial")
     regions = findRegions(knot)
 
     matrix = createMatrix(knot, regions)
@@ -18,12 +17,6 @@ def createAlexanderPolynomial(knot):
                 del row[i]
                 del row[0]
             break
-
-    for row in matrix:
-        string = ""
-        for elem in row:
-            string += f"({elem}) "
-        print(string)
 
     polynomial = determinant(matrix)
     return standardize(polynomial)
@@ -64,7 +57,6 @@ def findRegions(knot):
 
             sortedNextStrands = [(angleBetween(thisStrandVec, crossing.strands.getVector(otherStrand.edge, otherStrand.out)), otherStrand) for otherStrand in nextStrands]
             sortedNextStrands.sort() #sorts the strands to be connected by their angle
-            print(f"checking strand {strand}, nextStrands {[f'{str(x[1])} at angle {x[0]}' for x in sortedNextStrands]}")
 
             for i in range(len(sortedNextStrands)): #i here represents left or right
                 nextStrand = sortedNextStrands[i][1] #nextStrand holds strand that we are looking for
@@ -96,8 +88,6 @@ def findRegions(knot):
                         sortedNewNextStrands = [(angleBetween(nextStrandVec, nextCrossing.strands.getVector(otherStrand.edge, otherStrand.out)), otherStrand) for otherStrand in newNextStrands]
                         sortedNewNextStrands.sort()
 
-                        print(f"at {nextCrossing.coord} looking at {nextStrand} (redefined = {nextStrandThisCrossing}), new next Strand {[f'{str(x[1])} at angle {x[0]}' for x in sortedNewNextStrands]}")
-
                         nextStrand = sortedNewNextStrands[i][1]
                         curCrossing = nextCrossing
 
@@ -108,13 +98,6 @@ def findRegions(knot):
                         break
                 else:
                     regions.append(region)
-
-                print(f"added region {[str(x) for x in region]}")
-        print(f"regions so far crossing at {crossing.coord}")
-        for region in regions:
-            print("REGION")
-            for edge in region:
-                print(edge)
 
     return list(regions)
 
@@ -137,7 +120,6 @@ def createMatrix(knot, regions):
         for index in range(len(adjacentEdges)):
             for i in range(len(regions)):
                 if set(adjacentEdges[index]) <= set(regions[i]):
-                    print(f"edges in list {adjacentEdges[index]}, {regions[i]}")
                     edgeIndex = regions[i].index(adjacentEdges[index][0])
                     before = regions[i][(edgeIndex - 1) % len(regions[i])] == adjacentEdges[index][1]
                     after = regions[i][(edgeIndex + 1) % len(regions[i])] == adjacentEdges[index][1]
@@ -146,12 +128,6 @@ def createMatrix(knot, regions):
                         break
 
         matrix.append(row)
-
-    for row in matrix:
-        string = ""
-        for elem in row:
-            string += f"({elem}) "
-        print(string)
 
     return matrix
 
@@ -192,8 +168,6 @@ def standardize(polynomial):
         polynomial = polynomial[0]
 
     coefficients = polynomial.coef.tolist()
-
-    print(f"coefficents are {coefficients}")
 
     #remove zeros leading zeros
     while(coefficients[0] == 0 and len(coefficients) > 1): #while need to remove zeros

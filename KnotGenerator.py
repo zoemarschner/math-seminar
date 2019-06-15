@@ -472,8 +472,8 @@ def outputKnot():
 
 
 	knotObj =  Knot(cross)
-	printEdges()
-	printKnot(knotObj)
+	# printEdges()
+	# printKnot(knotObj)
 	SeifertMaker.createSeifertSurface(knotObj)
 	return knotObj
 
