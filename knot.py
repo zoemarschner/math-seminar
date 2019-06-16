@@ -1,3 +1,8 @@
+# knot.py
+# classes nessecary to represn a knot. Knot are represented with the Knot class,
+# which uses the other classes
+# author: Zoë Marschner
+
 import math
 from VectorOperations import *
 

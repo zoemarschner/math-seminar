@@ -1,3 +1,10 @@
+# SeifertMaker.py
+# calling createSeifertSurface creates a Seifert surface, using Seifert's algorihtm
+# from a knot, giving the string in obj file format and printing the genus and
+# alexander polynomial to the standard output
+# calling createAndViewSeifertSurface will display the surface with objViewer
+# author: Zoë Marschner
+
 import math
 from subprocess import Popen, PIPE, TimeoutExpired
 from VectorOperations import *
@@ -5,6 +12,10 @@ from AlexanderPolynomial import *
 import copy, sys
 
 STAGGER_PROPORTIONALITY_CONSTANT = 0.5
+
+def createAndViewSeifertSurface(knot):
+    outputString = createSeifertSurface(knot)
+    startObjViewer(outputString)
 
 def createSeifertSurface(knot):
     knot.resolveOrientation() #make sure lists of vectors align with orientation of edges
@@ -15,7 +26,7 @@ def createSeifertSurface(knot):
     print(f"LOWER BOUND FOR GENUS: {polynomial[1]} (from Alexander's polynomial)")
     seifertCircles = findCircles(mutateKnot) #find seifert circle
 
-    #caluclate genus from seifert circles
+    #calculate genus from seifert circles
     seifertGenus = (len(mutateKnot.crossings) - len(seifertCircles) + 1)//2
     print(f"UPPER BOUND FOR GENUS: {seifertGenus} (from Seifert's algorithm)")
     #move seifert circles to differnt leveles
@@ -30,15 +41,8 @@ def createSeifertSurface(knot):
 
     stripOutput = drawStrips(strips, startIndex = circleOutput[1])
     outputString += stripOutput[0]
-    writeToFile(outputString)
-    startObjViewer(outputString)
-
-def writeToFile(string, name="knot.obj"):
-    fileName = name
-    outputFile = open(fileName, "w")
-    outputFile.write(string)
-    outputFile.close()
-
+    return outputString
+    
 #----Main functions in Seifert's algorithm----#
 #creates arrays of edges represeting the seifert circles
 def findCircles(knot):

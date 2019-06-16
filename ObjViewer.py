@@ -1,3 +1,11 @@
+# ObjViewer.py
+# displays an obj file in a new window. In the window, press 'l' to toggle
+# dark/light mode, press 'b' to toggle black and white/color mode, and press
+# 'w' to write to 'knot.obj' if this wasn't opened from a file
+# from commandline, call with the file name of an obj file as a parameter
+# or call with no parameters and put a string in obj format in standard input
+# author: Zoë Marschner
+
 import pyglet
 from pyglet.gl import *
 from sys import argv, stdin
@@ -22,9 +30,9 @@ FRONT_BW = (.8, .8, .8, 1)
 openFile = False
 
 #---functions to be interfaced with---#
-#to use program call these functions or run program with fileName as an argument
+#to use program call these functions
 
-#pass fileName of obj file
+#reads and renders the obj file called fileName
 def renderObjFile(fileName):
     openFile = True
 
@@ -35,7 +43,7 @@ def renderObjFile(fileName):
 
     render(string)
 
-#pass string contents of obj file
+#renders the obj file given string in obj format
 def renderObjString(string):
     openFile = False
 

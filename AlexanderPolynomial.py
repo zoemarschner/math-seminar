@@ -1,3 +1,7 @@
+# AlexanderPolynomial.py
+# calculates the alexander polynomial and genus of a given knot
+# author: Zoë Marschner
+
 from VectorOperations import *
 from numpy.polynomial.polynomial import *
 import copy

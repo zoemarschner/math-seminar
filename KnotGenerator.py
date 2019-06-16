@@ -474,7 +474,7 @@ def outputKnot():
 	knotObj =  Knot(cross)
 	# printEdges()
 	# printKnot(knotObj)
-	SeifertMaker.createSeifertSurface(knotObj)
+	SeifertMaker.createAndViewSeifertSurface(knotObj)
 	return knotObj
 
 # prints knot
@@ -510,7 +510,7 @@ def restart():
 	isFinished = False
 	canvas.bind('<ButtonPress-1>', newPlacePoint)
 	canvas.delete('all')
-	print("Restart")
+	#print("Restart")
 
 
 

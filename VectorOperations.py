@@ -1,6 +1,11 @@
+# VectorOperations.py
+# defines methods for manipulating vectors/segments
+# author: Zoë Marschner
+
 import math
-#---defines methods for manipulating vectors/segments---#
-#vector is represented by a list of numbers (must be length 3 for cross product)
+
+# vector is represented by a list of numbers (must be length 3 for cross product)
+# segment is essentialy a list of two vectors
 
 #midpoint of two points in a list
 def midPoint(segment):
